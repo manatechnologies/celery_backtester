@@ -138,6 +138,8 @@ def pre_backtest_updates(task_id, params):
         start_date, _ = get_first_and_last_day(params['start_date'])
         _, end_date = get_first_and_last_day(params['end_date'])
         strategy = params.get("strategy", "Percentage Under").lower().replace(" ", "_")
+        if strategy == "percentage_under":
+            strategy = "percent_under"
         new_backtest = Backtest(id=params['backtest_id'],
                                 task_id=task_id,
                                 start_date=start_date,
