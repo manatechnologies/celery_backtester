@@ -66,19 +66,19 @@ def calculate_max_drawdown(dataframe, starting_portfolio_value):
     max_drawdown_percentage = (max_drawdown / starting_portfolio_value) * 100
     return max_drawdown_percentage, max_drawdown
 
-def calculate_portfolio_std(dataframe):
+def calculate_portfolio_std(daily_returns):
     """
-    Calculate the standard deviation of a portfolio's daily percentage returns.
+    Calculate the standard deviation of daily returns.
 
-    Parameters:
-    dataframe (pd.DataFrame): A DataFrame containing two columns: 'current_date' and 'portfolio_value'.
-                              'current_date' should be in 'YYYY-MM-DD' format and 'portfolio_value' should be the total value of the portfolio on that date.
+    Args:
+        daily_returns (DataFrame): DataFrame containing daily returns.
 
     Returns:
-    float: The standard deviation of the portfolio's daily percentage returns.
+        float: Standard deviation of daily returns. Returns 0 if standard deviation cannot be calculated.
     """
-    # Calculate the standard deviation of these daily returns
-    std_deviation = dataframe['daily_return_percent'].std()
+    std_deviation = daily_returns['daily_return_percent'].std()
+    if np.isnan(std_deviation):
+        return 0
     return std_deviation
 
 def calculate_downside_deviation(dataframe, mar=0.0):
