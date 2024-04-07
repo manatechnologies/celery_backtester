@@ -117,7 +117,7 @@ def get_benchmark_data():
         # Query the table
         query = f"""
             SELECT tb.* 
-            FROM `alduin-390505.benchmark.benchmark_alpha_vantage` tb
+            FROM `backtesting-engine.benchmark.benchmark_alpha_vantage` tb
             WHERE tb.date_field_0 >= '{start_date}' AND tb.date_field_0 <= '{end_date}'
             ORDER BY tb.date_field_0 ASC
             ;
