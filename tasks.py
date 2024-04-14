@@ -64,7 +64,7 @@ def run_backtest(self, params):
                                 portfolio_value=initial_portfolio_value,
                                 spread=params.get("spread", 50))
     
-    eval_data, unrealized_results = backtester.run()
+    completed_data, unrealized_results = backtester.run()
 
     daily_returns = generate_daily_stats(unrealized_results, initial_portfolio_value)
     statistics = generate_portfolio_stats(daily_returns, initial_portfolio_value)
@@ -77,6 +77,9 @@ def run_backtest(self, params):
     backtester_daily_results_dataset_id = os.getenv('backtester_daily_results_dataset_id')
     backtester_daily_results_table_name = f"{backtester_daily_results_dataset_id}.daily_results_{timestamp}"
 
+    backtester_completed_results_dataset_id = os.getenv('backtester_completed_results_dataset_id')
+    backtester_completed_results_table_name = f"{backtester_completed_results_dataset_id}.daily_results_{timestamp}"
+
     backtest_upload_info = {
         backtester_results_table_name: {
             "dataframe": unrealized_results,
@@ -85,6 +88,10 @@ def run_backtest(self, params):
         backtester_daily_results_table_name: {
             "dataframe": daily_returns,
             "file_name": "daily_results.csv"
+        },
+        backtester_completed_results_table_name: {
+            "dataframe": completed_data,
+            "file_name": "completed_results.csv"
         }
     }
 
