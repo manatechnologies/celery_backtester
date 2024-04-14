@@ -12,6 +12,8 @@ class Backtest(Base):
     task_id = Column(String, nullable=False)
     submitted_at = Column(DateTime, server_default=func.now())
     bigquery_table = Column(String, nullable=False)
+    bigquery_table_completed = Column(String, nullable=True)
+    bigquery_table_raw = Column(String, nullable=True)
     start_date = Column(Date)
     end_date = Column(Date)
     spread = Column(Integer)
