@@ -228,7 +228,7 @@ def post_backtest_updates(task_id, backtest_id, backtest_table_name, completed_b
     session = Session()
     try:
         # Update the row with bigquery_table
-        logger.info(f'Updating task {task_id} with BigQuery table name...')
+        logger.info(f'Updating task {task_id} with BigQuery table name {backtest_table_name}, {completed_backtest_table_name}, {unrealized_table_name}...')
         backtest = session.query(Backtest).filter(Backtest.id == backtest_id).first()
         backtest.bigquery_table = backtest_table_name
         backtest.bigquery_table_completed = completed_backtest_table_name
