@@ -78,7 +78,7 @@ def run_backtest(self, params):
     backtester_daily_results_table_name = f"{backtester_daily_results_dataset_id}.daily_results_{timestamp}"
 
     backtester_completed_results_dataset_id = os.getenv('backtester_completed_results_dataset_id')
-    backtester_completed_results_table_name = f"{backtester_completed_results_dataset_id}.daily_results_{timestamp}"
+    backtester_completed_results_table_name = f"{backtester_completed_results_dataset_id}.completed_results_{timestamp}"
 
     backtest_upload_info = {
         backtester_results_table_name: {
