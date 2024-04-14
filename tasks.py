@@ -109,7 +109,7 @@ def run_backtest(self, params):
     for table_name, info in backtest_upload_info.items():
         upload_df_to_bigquery(table_name, info["dataframe"], info["file_name"])
         
-    post_backtest_updates(task_id, backtest_id, backtester_daily_results_table_name, statistics)
+    post_backtest_updates(task_id, backtest_id, backtester_daily_results_table_name, backtester_completed_results_table_name, backtester_results_table_name, statistics)
     return {
             "task_id": task_id,
             "start_date": params.get("start_date"),
@@ -212,7 +212,7 @@ def upload_df_to_bigquery(table_name, df, file_name):
     finally:
         os.remove(file_name)
 
-def post_backtest_updates(task_id, backtest_id, backtest_table_name, statistics):
+def post_backtest_updates(task_id, backtest_id, backtest_table_name, completed_backtest_table_name, unrealized_table_name, statistics):
     """
     Save the task to the Postgres backtests table and the statistics to a separate table.
 
@@ -231,6 +231,8 @@ def post_backtest_updates(task_id, backtest_id, backtest_table_name, statistics)
         logger.info(f'Updating task {task_id} with BigQuery table name...')
         backtest = session.query(Backtest).filter(Backtest.id == backtest_id).first()
         backtest.bigquery_table = backtest_table_name
+        backtest.bigquery_table_completed = completed_backtest_table_name
+        backtest.bigquery_table_raw = unrealized_table_name
         backtest.status = 'completed'
         session.commit()
 
