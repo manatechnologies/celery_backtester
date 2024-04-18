@@ -116,10 +116,14 @@ def get_benchmark_data():
 
         # Query the table
         query = f"""
-            SELECT tb.* 
+            SELECT tb.*,
+                SUM(tb.daily_return_percent) OVER (
+                       ORDER BY tb.date ASC
+                       ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+                   ) as cumulative_return
             FROM `backtesting-engine.benchmark.benchmark_alpha_vantage` tb
-            WHERE tb.date_field_0 >= '{start_date}' AND tb.date_field_0 <= '{end_date}'
-            ORDER BY tb.date_field_0 ASC
+            WHERE tb.date >= '{start_date}' AND tb.date <= '{end_date}'
+            ORDER BY tb.date ASC
             ;
         """
 
