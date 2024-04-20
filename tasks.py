@@ -66,8 +66,8 @@ def run_backtest(self, params):
     
     completed_data, unrealized_results = backtester.run()
 
-    daily_returns = generate_daily_stats(unrealized_results, initial_portfolio_value)
-    statistics = generate_portfolio_stats(daily_returns, initial_portfolio_value)
+    joined_results = generate_daily_stats(unrealized_results, initial_portfolio_value)
+    statistics = generate_portfolio_stats(joined_results, initial_portfolio_value)
 
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
@@ -86,7 +86,7 @@ def run_backtest(self, params):
             "file_name": "unrealized_results.csv"
         },
         backtester_daily_results_table_name: {
-            "dataframe": daily_returns,
+            "dataframe": joined_results,
             "file_name": "daily_results.csv"
         },
         backtester_completed_results_table_name: {
@@ -129,13 +129,14 @@ def generate_daily_stats(unrealized_results, initial_portfolio_value):
     Returns:
         DataFrame: DataFrame containing daily returns, portfolio value, and daily return percentage.
     """
-    daily_returns = unrealized_results.groupby('current_date')['daily_trade_pnl'].sum().reset_index()
-    daily_returns.columns = ['current_date', 'daily_return']
-    daily_returns['portfolio_value'] = initial_portfolio_value + daily_returns['daily_return'].cumsum()
-    daily_returns['daily_return_percent'] = daily_returns['portfolio_value'].pct_change() * 100
-    return daily_returns
+    joined_results = unrealized_results.groupby('current_date')['daily_trade_pnl'].sum().reset_index()
+    joined_results.columns = ['current_date', 'daily_return']
+    joined_results['portfolio_value'] = initial_portfolio_value + joined_results['daily_return'].cumsum()
+    joined_results['daily_return_percent'] = joined_results['portfolio_value'].pct_change() * 100
+    joined_results['cumulative_return_percent'] = (1 + joined_results['daily_return_percent'] / 100).cumprod() - 1
+    return joined_results
 
-def generate_portfolio_stats(daily_returns, initial_portfolio_value):
+def generate_portfolio_stats(joined_results, initial_portfolio_value):
     """
     Calculate various statistics for a portfolio based on daily returns.
 
@@ -155,18 +156,18 @@ def generate_portfolio_stats(daily_returns, initial_portfolio_value):
             - average_daily_return (float): Average daily return percentage.
     """
     # Total Percentage Return
-    total_return_percentage, total_return = calculate_total_return(daily_returns, initial_portfolio_value)
+    total_return_percentage, total_return = calculate_total_return(joined_results, initial_portfolio_value)
 
     # Max Drawdown
-    max_drawdown_percent, max_drawdown = calculate_max_drawdown(daily_returns, initial_portfolio_value)
+    max_drawdown_percent, max_drawdown = calculate_max_drawdown(joined_results, initial_portfolio_value)
 
     # Standard Deviation
-    std_deviation = calculate_portfolio_std(daily_returns)
+    std_deviation = calculate_portfolio_std(joined_results)
 
-    positive_periods = int((daily_returns['daily_return_percent'] > 0).sum())
-    negative_periods = int((daily_returns['daily_return_percent'] < 0).sum())
+    positive_periods = int((joined_results['daily_return_percent'] > 0).sum())
+    negative_periods = int((joined_results['daily_return_percent'] < 0).sum())
 
-    average_daily_return = daily_returns['daily_return_percent'].mean()
+    average_daily_return = joined_results['daily_return_percent'].mean()
 
     return {
         'total_return_percentage': total_return_percentage,
