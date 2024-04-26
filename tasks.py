@@ -1,4 +1,5 @@
 import os
+import time
 import uuid
 import pandas as pd
 import numpy as np
@@ -51,6 +52,8 @@ def run_backtest(self, params):
         dict: The unrealized results of the backtest.
 
     """
+    start_time = time.time()
+
     task_id = self.request.id
     backtest_id = params.get('backtest_id')
     testing = params.get("testing", False)
@@ -105,11 +108,14 @@ def run_backtest(self, params):
             "save_to_datastore": False,
             "statistics": statistics,
         }
-    # Upload each results dataframe to BigQuery and upload metadata + statistics to Postgres
+    # Upload each results dataframe to BigQuery
     for table_name, info in backtest_upload_info.items():
         upload_df_to_bigquery(table_name, info["dataframe"], info["file_name"])
-        
-    post_backtest_updates(task_id, backtest_id, backtester_daily_results_table_name, backtester_completed_results_table_name, backtester_results_table_name, statistics)
+
+    # Calculate exection time and save all results to the database
+    end_time = time.time()
+    execution_time = end_time - start_time
+    post_backtest_updates(task_id, backtest_id, execution_time, backtester_daily_results_table_name, backtester_completed_results_table_name, backtester_results_table_name, statistics)
     return {
             "task_id": task_id,
             "start_date": params.get("start_date"),
@@ -213,7 +219,7 @@ def upload_df_to_bigquery(table_name, df, file_name):
     finally:
         os.remove(file_name)
 
-def post_backtest_updates(task_id, backtest_id, backtest_table_name, completed_backtest_table_name, unrealized_table_name, statistics):
+def post_backtest_updates(task_id, backtest_id, execution_time, backtest_table_name, completed_backtest_table_name, unrealized_table_name, statistics):
     """
     Save the task to the Postgres backtests table and the statistics to a separate table.
 
@@ -235,6 +241,7 @@ def post_backtest_updates(task_id, backtest_id, backtest_table_name, completed_b
         backtest.bigquery_table_completed = completed_backtest_table_name
         backtest.bigquery_table_raw = unrealized_table_name
         backtest.status = 'completed'
+        backtest.execution_time = execution_time
         session.commit()
 
         logger.info(f'Saving statistics for task {task_id} to Postgres statistics table...')
