@@ -217,7 +217,9 @@ def upload_df_to_bigquery(table_name, df, file_name):
         logger.error(f'Failed to upload {file_name} to BigQuery: {e}')
         raise
     finally:
-        os.remove(file_name)
+        if os.path.exists(file_name):
+            os.remove(file_name)
+        
 
 def post_backtest_updates(task_id, backtest_id, execution_time, backtest_table_name, completed_backtest_table_name, unrealized_table_name, statistics):
     """
