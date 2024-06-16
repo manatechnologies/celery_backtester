@@ -67,13 +67,13 @@ def run_backtest(self, params):
                                 portfolio_value=initial_portfolio_value,
                                 spread=params.get("spread", 50))
     
-    completed_data, unrealized_results = backtester.run()
+    completed_data, benchmark_data, unrealized_results = backtester.run()
 
     joined_results = generate_daily_stats(unrealized_results, initial_portfolio_value)
     statistics = generate_portfolio_stats(joined_results, initial_portfolio_value)
+    benchmark_statistics = generate_portfolio_stats(benchmark_data, initial_portfolio_value)
 
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-
     backtester_results_dataset_id = os.getenv('backtester_results_dataset_id')
     backtester_results_table_name = f"{backtester_results_dataset_id}.unrealized_results_{timestamp}"
 
@@ -107,6 +107,7 @@ def run_backtest(self, params):
             "end_date": params.get("end_date"),
             "save_to_datastore": False,
             "statistics": statistics,
+            "benchmark_statistics": benchmark_statistics,
         }
     # Upload each results dataframe to BigQuery
     for table_name, info in backtest_upload_info.items():
