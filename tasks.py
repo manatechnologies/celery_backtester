@@ -69,9 +69,12 @@ def run_backtest(self, params):
     
     completed_data, benchmark_data, unrealized_results = backtester.run()
 
+    # Generate daily data from raw data
     joined_results = generate_daily_stats(unrealized_results, initial_portfolio_value)
     # Append benchmark data to the joined results
+    benchmark_data = benchmark_data.rename(columns={'date': 'current_date'})
     joined_results = pd.merge(joined_results, benchmark_data, on='current_date', how='left', suffixes=('', '_benchmark'))
+    # Generate statistics for the portfolio and benchmark
     statistics = generate_portfolio_stats(joined_results, initial_portfolio_value)
     benchmark_statistics = generate_portfolio_stats(benchmark_data, initial_portfolio_value)
 
