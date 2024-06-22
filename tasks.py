@@ -10,7 +10,7 @@ from celery.utils.log import get_task_logger
 from google.cloud import bigquery
 from backtester.engine import BacktestEngine
 from database.db import Session
-from database.models import Backtest, Statistic
+from database.models import Backtest, Statistic, BenchmarkStatistic
 
 from utils import calculate_total_return, calculate_max_drawdown, calculate_portfolio_std
 
@@ -67,13 +67,15 @@ def run_backtest(self, params):
                                 portfolio_value=initial_portfolio_value,
                                 spread=params.get("spread", 50))
     
-    completed_data, unrealized_results = backtester.run()
+    completed_data, benchmark_data, unrealized_results = backtester.run()
 
     joined_results = generate_daily_stats(unrealized_results, initial_portfolio_value)
+    # Append benchmark data to the joined results
+    joined_results = pd.merge(joined_results, benchmark_data, on='current_date', how='left', suffixes=('', '_benchmark'))
     statistics = generate_portfolio_stats(joined_results, initial_portfolio_value)
+    benchmark_statistics = generate_portfolio_stats(benchmark_data, initial_portfolio_value)
 
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-
     backtester_results_dataset_id = os.getenv('backtester_results_dataset_id')
     backtester_results_table_name = f"{backtester_results_dataset_id}.unrealized_results_{timestamp}"
 
@@ -107,6 +109,7 @@ def run_backtest(self, params):
             "end_date": params.get("end_date"),
             "save_to_datastore": False,
             "statistics": statistics,
+            "benchmark_statistics": benchmark_statistics,
         }
     # Upload each results dataframe to BigQuery
     for table_name, info in backtest_upload_info.items():
@@ -115,13 +118,14 @@ def run_backtest(self, params):
     # Calculate exection time and save all results to the database
     end_time = time.time()
     execution_time = end_time - start_time
-    post_backtest_updates(task_id, backtest_id, execution_time, backtester_daily_results_table_name, backtester_completed_results_table_name, backtester_results_table_name, statistics)
+    post_backtest_updates(task_id, backtest_id, execution_time, backtester_daily_results_table_name, backtester_completed_results_table_name, backtester_results_table_name, statistics, benchmark_statistics)
     return {
             "task_id": task_id,
             "start_date": params.get("start_date"),
             "end_date": params.get("end_date"),
             "save_to_datastore": True,
             "statistics": statistics,
+            "benchmark_statistics": benchmark_statistics,
         }
 
 def generate_daily_stats(unrealized_results, initial_portfolio_value):
@@ -221,7 +225,7 @@ def upload_df_to_bigquery(table_name, df, file_name):
             os.remove(file_name)
         
 
-def post_backtest_updates(task_id, backtest_id, execution_time, backtest_table_name, completed_backtest_table_name, unrealized_table_name, statistics):
+def post_backtest_updates(task_id, backtest_id, execution_time, backtest_table_name, completed_backtest_table_name, unrealized_table_name, statistics, benchmark_statistics):
     """
     Save the task to the Postgres backtests table and the statistics to a separate table.
 
@@ -246,11 +250,16 @@ def post_backtest_updates(task_id, backtest_id, execution_time, backtest_table_n
         backtest.execution_time = execution_time
         session.commit()
 
-        logger.info(f'Saving statistics for task {task_id} to Postgres statistics table...')
+        logger.info(f'Saving statistics and benchmark data for task {task_id} to Postgres statistics table...')
         new_statistics = Statistic(id=uuid.uuid4(),
                                    backtest_id=backtest_id,
                                    **statistics)
+        
+        new_benchmark_statistics = BenchmarkStatistic(id=uuid.uuid4(),
+                                                      backtest_id=backtest_id,
+                                                      **benchmark_statistics)
         session.add(new_statistics)
+        session.add(new_benchmark_statistics)
         session.commit()
     except Exception as e:
         session.rollback()
