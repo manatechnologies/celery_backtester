@@ -7,7 +7,7 @@ from tasks import run_backtest
 from functools import wraps
 from sqlalchemy import desc
 from database.db import Session
-from database.models import Backtest, Statistic
+from database.models import Backtest, Statistic, BenchmarkStatistic
 from utils import get_first_and_last_day
 from google.cloud import bigquery
 
@@ -58,14 +58,16 @@ def get_backtests():
         # Perform a join between backtests and statistics tables and order by the submission date in descending order
         results = session.query(Backtest, Statistic)\
             .outerjoin(Statistic, Backtest.id == Statistic.backtest_id)\
+            .outerjoin(BenchmarkStatistic, Backtest.id == BenchmarkStatistic.backtest_id)\
             .order_by(desc(Backtest.submitted_at)).all()
         
         # Convert the query results to dictionaries and return as JSON
         backtests_statistics = [
             {
                 'backtest': backtest.to_dict(),
-                'statistic': statistic.to_dict() if statistic else None
-            } for backtest, statistic in results
+                'statistic': statistic.to_dict() if statistic else None,
+                'backtest_statistic': benchmark_statistic.to_dict() if benchmark_statistic else None
+            } for backtest, statistic, benchmark_statistic in results
         ]
         return jsonify(backtests_statistics)
     
