@@ -56,7 +56,7 @@ def get_backtests():
     session = Session()
     try:
         # Perform a join between backtests and statistics tables and order by the submission date in descending order
-        results = session.query(Backtest, Statistic)\
+        results = session.query(Backtest, Statistic, BenchmarkStatistic)\
             .outerjoin(Statistic, Backtest.id == Statistic.backtest_id)\
             .outerjoin(BenchmarkStatistic, Backtest.id == BenchmarkStatistic.backtest_id)\
             .order_by(desc(Backtest.submitted_at)).all()
