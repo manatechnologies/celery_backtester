@@ -26,14 +26,14 @@ def upgrade() -> None:
         'benchmark_statistics',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
         sa.Column('backtest_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('backtests.id'), nullable=False),
-        sa.Column('total_return_percentage', sa.Float),
-        sa.Column('total_return', sa.Float),
-        sa.Column('max_drawdown_percent', sa.Float),
-        sa.Column('max_drawdown', sa.Float),
-        sa.Column('std_deviation', sa.Float),
-        sa.Column('positive_periods', sa.Integer),
-        sa.Column('negative_periods', sa.Integer),
-        sa.Column('average_daily_return', sa.Float)
+        sa.Column('bm_return_percentage', sa.Float),
+        sa.Column('bm_total_return', sa.Float),
+        sa.Column('bm_max_drawdown_percent', sa.Float),
+        sa.Column('bm_max_drawdown', sa.Float),
+        sa.Column('bm_std_deviation', sa.Float),
+        sa.Column('bm_positive_periods', sa.Integer),
+        sa.Column('bm_negative_periods', sa.Integer),
+        sa.Column('bm_average_daily_return', sa.Float)
     )
 
 
