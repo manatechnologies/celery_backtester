@@ -76,7 +76,7 @@ def run_backtest(self, params):
     joined_results = pd.merge(joined_results, benchmark_data, on='current_date', how='left', suffixes=('', '_benchmark'))
     # Generate statistics for the portfolio and benchmark
     statistics = generate_portfolio_stats(joined_results, initial_portfolio_value)
-    benchmark_statistics = generate_portfolio_stats(benchmark_data, initial_portfolio_value)
+    benchmark_statistics = generate_portfolio_stats(benchmark_data, initial_portfolio_value, benchmark=True)
 
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     backtester_results_dataset_id = os.getenv('backtester_results_dataset_id')
@@ -149,7 +149,7 @@ def generate_daily_stats(unrealized_results, initial_portfolio_value):
     joined_results['cumulative_return_percent'] = (1 + joined_results['daily_return_percent'] / 100).cumprod() - 1
     return joined_results
 
-def generate_portfolio_stats(joined_results, initial_portfolio_value):
+def generate_portfolio_stats(joined_results, initial_portfolio_value, benchmark=False):
     """
     Calculate various statistics for a portfolio based on daily returns.
 
@@ -182,6 +182,19 @@ def generate_portfolio_stats(joined_results, initial_portfolio_value):
 
     average_daily_return = joined_results['daily_return_percent'].mean()
 
+    # If benchmark is True add bm_ as prefix to the statistics
+    if benchmark:
+        return {
+            'bm_total_return_percentage': total_return_percentage,
+            'bm_total_return': total_return,
+            'bm_max_drawdown_percent': max_drawdown_percent,
+            'bm_max_drawdown': max_drawdown,
+            'bm_std_deviation': std_deviation,
+            'bm_positive_periods': positive_periods,
+            'bm_negative_periods': negative_periods,
+            'bm_average_daily_return': average_daily_return
+        }
+
     return {
         'total_return_percentage': total_return_percentage,
         'total_return': total_return,
@@ -192,6 +205,8 @@ def generate_portfolio_stats(joined_results, initial_portfolio_value):
         'negative_periods': negative_periods,
         'average_daily_return': average_daily_return
     }
+
+
 
 def upload_df_to_bigquery(table_name, df, file_name):
     """
