@@ -66,7 +66,7 @@ def get_backtests():
             {
                 'backtest': backtest.to_dict(),
                 'statistic': statistic.to_dict() if statistic else None,
-                'backtest_statistic': benchmark_statistic.to_dict() if benchmark_statistic else None
+                'benchmark_statistic': benchmark_statistic.to_dict() if benchmark_statistic else None
             } for backtest, statistic, benchmark_statistic in results
         ]
         return jsonify(backtests_statistics)
