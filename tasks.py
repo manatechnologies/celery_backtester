@@ -71,9 +71,8 @@ def run_backtest(self, params):
 
     # Generate daily data from raw data
     joined_results = generate_daily_stats(unrealized_results, initial_portfolio_value)
-    # Append benchmark data to the joined results
-    benchmark_data = benchmark_data.rename(columns={'date': 'current_date'})
-    joined_results = pd.merge(joined_results, benchmark_data, on='current_date', how='left', suffixes=('', '_benchmark'))
+    joined_results = add_benchmark_data(joined_results, benchmark_data)
+
     # Generate statistics for the portfolio and benchmark
     statistics = generate_portfolio_stats(joined_results, initial_portfolio_value)
     benchmark_statistics = generate_portfolio_stats(benchmark_data, initial_portfolio_value, benchmark=True)
@@ -146,7 +145,23 @@ def generate_daily_stats(unrealized_results, initial_portfolio_value):
     joined_results.columns = ['current_date', 'daily_return']
     joined_results['portfolio_value'] = initial_portfolio_value + joined_results['daily_return'].cumsum()
     joined_results['daily_return_percent'] = joined_results['portfolio_value'].pct_change() * 100
-    joined_results['cumulative_return_percent'] = (1 + joined_results['daily_return_percent'] / 100).cumprod() - 1
+    joined_results['cumulative_return_percent'] = ((1 + joined_results['daily_return_percent'] / 100).cumprod() - 1) * 100
+    return joined_results
+
+def add_benchmark_data(joined_results, benchmark_data):
+    """
+    Add benchmark data to the daily results DataFrame.
+
+    Args:
+        joined_results (DataFrame): DataFrame containing daily results.
+        benchmark_data (DataFrame): DataFrame containing benchmark data.
+
+    Returns:
+        DataFrame: DataFrame containing daily results with benchmark data.
+    """
+    benchmark_data = benchmark_data.rename(columns={'date': 'current_date'})
+    joined_results = pd.merge(joined_results, benchmark_data, on='current_date', how='left', suffixes=('', '_benchmark'))
+    joined_results['cumulative_return_percent_benchmark'] = ((1 + joined_results['daily_return_percent_benchmark'] / 100).cumprod() - 1) * 100
     return joined_results
 
 def generate_portfolio_stats(joined_results, initial_portfolio_value, benchmark=False):
