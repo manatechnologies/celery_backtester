@@ -77,6 +77,33 @@ def get_backtests():
     finally:
         session.close()
 
+@app.route('/data', methods=['GET'])
+@require_api_key
+def get_bigquery_data():
+    try:
+        # Extract parameters from the query string
+        bigquery_table = request.args.get('bigquery_table')
+        logging.info(f"GET /data for {bigquery_table}")
+
+        # Create a BigQuery client
+        client = bigquery.Client()
+
+        # Query the table
+        query = f"""
+            SELECT tb.* 
+            FROM `{bigquery_table}` tb
+            ORDER BY tb.current_date ASC
+            ;
+        """
+
+        query_job = client.query(query)
+        results = query_job.result()
+        results = [dict(row) for row in results]
+
+        return jsonify(results)
+    except Exception as e:
+        return jsonify(error=str(e)), 400
+
 @app.route('/raw_data', methods=['GET'])
 @require_api_key
 def get_raw_data():
@@ -90,9 +117,88 @@ def get_raw_data():
 
         # Query the table
         query = f"""
-            SELECT tb.* 
-            FROM `{bigquery_table}` tb
-            ORDER BY tb.current_date ASC
+            WITH trade_legs AS (
+                SELECT 
+                    trade_id,
+                    `current_date`,
+                    'sell' AS leg_type,
+                    'P' AS option_type,
+                    root,
+                    sell_strike AS strike,
+                    expiration_date,
+                    start_date,
+                    daily_trade_pnl,
+                    pnl,
+                    position_size,
+                    spread_price,
+                    underlying_price
+                FROM 
+                    `{bigquery_table}`
+
+                UNION ALL
+
+                SELECT 
+                    trade_id,
+                    `current_date`,
+                    'buy' AS leg_type,
+                    'P' AS option_type,
+                    root,
+                    buy_strike AS strike,
+                    expiration_date,
+                    start_date,
+                    daily_trade_pnl,
+                    pnl,
+                    position_size,
+                    spread_price,
+                    underlying_price
+                FROM 
+                    `{bigquery_table}`
+            )
+            SELECT 
+                t.*,
+                m.open,
+                m.high,
+                m.low,
+                m.close,
+                m.trade_volume,
+                m.bid_size_1545,
+                m.bid_1545,
+                m.ask_size_1545,
+                m.ask_1545,
+                m.underlying_bid_1545,
+                m.underlying_ask_1545,
+                m.implied_underlying_price_1545,
+                m.active_underlying_price_1545,
+                m.implied_volatility_1545,
+                m.delta_1545,
+                m.gamma_1545,
+                m.theta_1545,
+                m.vega_1545,
+                m.rho_1545,
+                m.bid_size_eod,
+                m.bid_eod,
+                m.ask_size_eod,
+                m.ask_eod,
+                m.underlying_bid_eod,
+                m.underlying_ask_eod,
+                m.vwap,
+                m.open_interest
+            FROM 
+                trade_legs t
+            LEFT JOIN
+                `backtesting-engine.eod_options_chain_daily_dataset.*` m
+            ON
+                t.`current_date` = m.quote_date
+                AND t.expiration_date = m.expiration
+                AND t.strike = m.strike
+                AND t.option_type = m.option_type
+                AND t.root = m.root
+            WHERE
+                underlying_symbol = '^SPX'
+            ORDER BY 
+                `current_date` ASC,
+                start_date,
+                expiration_date
             ;
         """
 
