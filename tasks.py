@@ -3,6 +3,7 @@ import time
 import uuid
 import pandas as pd
 import numpy as np
+import traceback
 from functools import wraps
 from datetime import datetime
 from celery import Celery
@@ -33,8 +34,11 @@ def update_error_status(func):
             task_id = args[0].request.id
             params = args[1]
             backtest_id = params.get('backtest_id')
-            logger.error(f'Error running backtest {task_id}: {e}')
-            error_status_update(backtest_id)
+            error_msg = str(e)
+            stack_trace = traceback.format_exc()
+
+            logger.error(f'Error running backtest {task_id}: {error_msg}\n{stack_trace}')
+            error_status_update(backtest_id, error_msg, stack_trace)
             raise
     return wrapper
 
@@ -301,22 +305,30 @@ def post_backtest_updates(task_id, backtest_id, execution_time, backtest_table_n
     finally:
         session.close()
 
-def error_status_update(backtest_id):
+
+def error_status_update(backtest_id, error_msg, stack_trace):
     """
-    Updates the status column of a backtest to 'error'.
+    Updates the status column of a backtest to 'error' and adds error details.
 
     Args:
         backtest_id (str): The ID of the backtest.
+        error_msg (str): The error message.
+        stack_trace (str): The full stack trace of the error.
     """
     session = Session()
     try:
         logger.info(f'Updating backtest {backtest_id} status to error...')
         backtest = session.query(Backtest).filter(Backtest.id == backtest_id).first()
-        backtest.status = 'error'
-        session.commit()
+        if backtest:
+            backtest.status = 'error'
+            backtest.error_msg = error_msg
+            backtest.stack_trace = stack_trace
+            session.commit()
+            logger.info(f'Successfully updated backtest {backtest_id} with error details.')
+        else:
+            logger.error(f'Backtest {backtest_id} not found in database.')
     except Exception as e:
         session.rollback()
         logger.error(f'Failed to update backtest {backtest_id} status to error: {e}')
-        raise
     finally:
         session.close()
