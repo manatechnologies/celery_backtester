@@ -317,7 +317,7 @@ def error_status_update(backtest_id, error_msg, stack_trace):
     """
     session = Session()
     try:
-        logger.info(f'Updating backtest {backtest_id} status to error...')
+        logger.info(f'Updating backtest {backtest_id} status to error: {error_msg} with stack_trace {stack_trace}...')
         backtest = session.query(Backtest).filter(Backtest.id == backtest_id).first()
         if backtest:
             backtest.status = 'error'
