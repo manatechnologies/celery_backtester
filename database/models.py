@@ -23,6 +23,8 @@ class Backtest(Base):
     strategy = Column(Enum('percent_under', 'desired_premium', name='sell_strike_method_enum'))
     strategy_unit = Column(Float)
     execution_time = Column(Float)
+    error_msg = Column(String, nullable=True)
+    stack_trace = Column(String, nullable=True)
 
     def to_dict(self):
         return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}
