@@ -186,7 +186,7 @@ def get_raw_data():
             FROM 
                 trade_legs t
             LEFT JOIN
-                `backtesting-engine.eod_options_chain_daily_dataset.*` m
+                `manatechnologies-io.eod_options_chain_daily_dataset.*` m
             ON
                 t.`current_date` = m.quote_date
                 AND t.expiration_date = m.expiration
@@ -229,7 +229,7 @@ def get_benchmark_data():
                        ORDER BY tb.date ASC
                        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
                    ) as cumulative_return
-            FROM `backtesting-engine.benchmark.benchmark_alpha_vantage` tb
+            FROM `manatechnologies-io.benchmark.benchmark_alpha_vantage` tb
             WHERE tb.date >= '{start_date}' AND tb.date <= '{end_date}'
             ORDER BY tb.date ASC
             ;
