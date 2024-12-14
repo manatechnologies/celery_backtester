@@ -77,6 +77,42 @@ def get_backtests():
     finally:
         session.close()
 
+@app.route('/backtest', methods=['GET'])
+@require_api_key
+def get_backtest():
+    session = Session()
+    try:
+        backtest_id = request.args.get('backtest_id')
+        if not backtest_id:
+            return jsonify({"error": "backtest_id is required"}), 400
+
+        logging.info(f"GET /backtest for {backtest_id}")
+
+        # Perform a join between backtests and statistics tables and order by the submission date in descending order
+        result = session.query(Backtest, Statistic, BenchmarkStatistic)\
+            .outerjoin(Statistic, Backtest.id == Statistic.backtest_id)\
+            .outerjoin(BenchmarkStatistic, Backtest.id == BenchmarkStatistic.backtest_id)\
+            .filter(Backtest.id == backtest_id)\
+            .first()
+        
+        if not result:
+            return jsonify({"error": "Backtest not found"}), 404
+
+        backtest, statistic, benchmark_statistic = result
+        response = {
+            'backtest': backtest.to_dict(),
+            'statistic': statistic.to_dict() if statistic else None,
+            'benchmark_statistic': benchmark_statistic.to_dict() if benchmark_statistic else None
+        }
+        
+        return jsonify(response)
+    
+    except Exception as e:
+        logging.error(f'Failed to fetch backtests: {e}')
+        return jsonify(error=str(e)), 400
+    finally:
+        session.close()
+
 @app.route('/data', methods=['GET'])
 @require_api_key
 def get_bigquery_data():
