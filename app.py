@@ -118,16 +118,40 @@ def get_backtest():
 @require_api_key
 def monte_carlo():
     try:
-        # Extract parameters from the request
+        # Extract parameters from the request with safe defaults
         params = request.get_json()
+        if not params:
+            return jsonify(error="No JSON data provided"), 400
+
+        # Required parameters
+        S0 = params.get('S0')
+        K = params.get('K')
+        r = params.get('r')
+        sigma = params.get('sigma')
+        expiration_date = params.get('expiration_date')
+
+        # Check if required parameters are present
+        required_params = {'S0': S0, 'K': K, 'r': r, 'sigma': sigma, 'expiration_date': expiration_date}
+        missing_params = [param for param, value in required_params.items() if value is None]
+        
+        if missing_params:
+            return jsonify(error=f"Missing required parameters: {', '.join(missing_params)}"), 400
+
+        # Optional parameters with defaults
+        num_simulations = params.get('num_simulations', 100000)
+        option_type = params.get('option_type', 'put')
+        confidence_level = params.get('confidence_level', 0.95)
 
         monte_carlo = MonteCarloEngine()
         resp = monte_carlo.run(
-            S0=params['S0'],
-            K=params['K'],
-            r=params['r'],
-            sigma=params['sigma'],
-            expiration_date=params['expiration_date'],
+            S0=S0,
+            K=K,
+            r=r,
+            sigma=sigma,
+            expiration_date=expiration_date,
+            num_simulations=num_simulations,
+            option_type=option_type,
+            confidence_level=confidence_level
         )
         return resp
     except Exception as e:
