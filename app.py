@@ -10,6 +10,7 @@ from database.db import Session
 from database.models import Backtest, Statistic, BenchmarkStatistic
 from utils import get_first_and_last_day
 from google.cloud import bigquery
+from thales.options_analyzer.monte_carlo.engine import MonteCarloEngine
 
 logging.basicConfig(level=logging.INFO)
 
@@ -112,6 +113,25 @@ def get_backtest():
         return jsonify(error=str(e)), 400
     finally:
         session.close()
+
+@app.route('/monte_carlo', methods=['POST'])
+@require_api_key
+def monte_carlo():
+    try:
+        # Extract parameters from the request
+        params = request.get_json()
+
+        monte_carlo = MonteCarloEngine()
+        resp = monte_carlo.run(
+            S0=params['S0'],
+            K=params['K'],
+            r=params['r'],
+            sigma=params['sigma'],
+            expiration_date=params['expiration_date'],
+        )
+        return resp
+    except Exception as e:
+        return jsonify(error=str(e)), 400
 
 @app.route('/data', methods=['GET'])
 @require_api_key
