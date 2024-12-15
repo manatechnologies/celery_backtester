@@ -69,6 +69,7 @@ pyzmq==25.1.2
 redis==4.2.2
 requests==2.31.0
 rsa==4.9
+scipy==1.14.1
 six==1.16.0
 SQLAlchemy==2.0.23
 stack-data==0.6.3
