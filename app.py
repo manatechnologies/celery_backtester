@@ -118,44 +118,41 @@ def get_backtest():
 @require_api_key
 def monte_carlo():
     try:
-        # Extract parameters from the request with safe defaults
+        # Extract parameters from the request
         params = request.get_json()
         if not params:
-            return jsonify(error="No JSON data provided"), 400
-
-        # Required parameters
-        S0 = params.get('S0')
-        K = params.get('K')
-        r = params.get('r')
-        sigma = params.get('sigma')
-        expiration_date = params.get('expiration_date')
-
-        # Check if required parameters are present
-        required_params = {'S0': S0, 'K': K, 'r': r, 'sigma': sigma, 'expiration_date': expiration_date}
-        missing_params = [param for param, value in required_params.items() if value is None]
-        
-        if missing_params:
-            return jsonify(error=f"Missing required parameters: {', '.join(missing_params)}"), 400
-
-        # Optional parameters with defaults
-        num_simulations = params.get('num_simulations', 100000)
-        option_type = params.get('option_type', 'put')
-        confidence_level = params.get('confidence_level', 0.95)
+            return jsonify({"error": "No JSON data provided"}), 400
 
         monte_carlo = MonteCarloEngine()
-        resp = monte_carlo.run(
-            S0=S0,
-            K=K,
-            r=r,
-            sigma=sigma,
-            expiration_date=expiration_date,
-            num_simulations=num_simulations,
-            option_type=option_type,
-            confidence_level=confidence_level
+        result = monte_carlo.run(
+            S0=params['S0'],
+            K=params['K'],
+            r=params['r'],
+            sigma=params['sigma'],
+            expiration_date=params['expiration_date'],
+            num_simulations=params.get('num_simulations', 100000),
+            option_type=params.get('option_type', 'put'),
+            confidence_level=params.get('confidence_level', 0.95)
         )
-        return resp
+
+        # Convert NumPy types to Python native types
+        serializable_result = {
+            'itm_probability': float(result['itm_probability']),
+            'otm_probability': float(result['otm_probability']),
+            'confidence_interval': (
+                float(result['confidence_interval'][0]),
+                float(result['confidence_interval'][1])
+            ),
+            'bs_delta': float(result['bs_delta']),
+            # Convert only a subset of prices/paths for visualization
+            'prices': result['prices'][:1000].tolist() if len(result['prices']) > 1000 else result['prices'].tolist(),
+            'paths': result['paths'][:100].tolist() if len(result['paths']) > 100 else result['paths'].tolist(),
+            'times': result['times'].tolist()
+        }
+
+        return jsonify(serializable_result)
     except Exception as e:
-        return jsonify(error=str(e)), 400
+        return jsonify({"error": str(e)}), 400
 
 @app.route('/data', methods=['GET'])
 @require_api_key
