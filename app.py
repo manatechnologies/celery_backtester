@@ -146,8 +146,8 @@ def monte_carlo():
             ),
             'bs_delta': float(result['bs_delta']),
             # Convert only a subset of prices/paths for visualization
-            'prices': np.random.choice(result['prices'], size=min(1000, len(result['prices'])), replace=False).tolist(),
-            'paths': np.random.choice(result['paths'], size=min(1000, len(result['paths'])), replace=False).tolist(),
+            'prices': result['prices'][:1000].tolist() if len(result['prices']) > 1000 else result['prices'].tolist(),
+            'paths': result['paths'][:1000].tolist() if len(result['paths']) > 1000 else result['paths'].tolist(),
             'times': result['times'].tolist()
         }
 
