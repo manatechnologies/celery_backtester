@@ -1,6 +1,7 @@
 import os
 import uuid
 import logging
+import numpy as np
 from flask_cors import CORS
 from flask import Flask, request, jsonify
 from tasks import run_backtest
@@ -145,8 +146,8 @@ def monte_carlo():
             ),
             'bs_delta': float(result['bs_delta']),
             # Convert only a subset of prices/paths for visualization
-            'prices': result['prices'].tolist(),
-            'paths': result['paths'].tolist(),
+            'prices': np.random.choice(result['prices'], size=min(1000, len(result['prices'])), replace=False).tolist(),
+            'paths': np.random.choice(result['paths'], size=min(1000, len(result['paths'])), replace=False).tolist(),
             'times': result['times'].tolist()
         }
 
