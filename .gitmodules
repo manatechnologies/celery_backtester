@@ -1,3 +1,6 @@
 [submodule "backtester"]
 	path = backtester
 	url = git@github.com:weavecode-io/backtesting_engine.git
+[submodule "thales"]
+	path = thales
+	url = git@github.com:manatechnologies/thales.git
