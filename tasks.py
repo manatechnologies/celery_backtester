@@ -10,6 +10,7 @@ from celery import Celery
 from celery.utils.log import get_task_logger
 from google.cloud import bigquery
 from backtester.engine import BacktestEngine
+from thales.backtester.engine import BacktestEngine as BE
 from database.db import Session
 from database.models import Backtest, Statistic, BenchmarkStatistic
 
@@ -54,7 +55,6 @@ def run_backtest(self, params):
 
     Returns:
         dict: The unrealized results of the backtest.
-
     """
     start_time = time.time()
 
@@ -133,6 +133,35 @@ def run_backtest(self, params):
             "statistics": statistics,
             "benchmark_statistics": benchmark_statistics,
         }
+
+# @app.task(bind=True)
+# @update_error_status
+# def run_backtest_v2(self, params):
+#     """
+#     Run a backtest using v2 and the provided parameters.
+
+#     Args:
+#         self: The task instance.
+#         params (dict): A dictionary containing the backtest parameters.
+
+#     Returns:
+#         dict: The unrealized results of the backtest.
+#     """
+#     start_time = time.time()
+#     task_id = self.request.id
+#     backtest_id = params.get('backtest_id')
+#     testing = params.get("testing", False)
+#     initial_portfolio_value = params.get("initial_balance", 1000000)
+
+#     logger.info(f"Initializing backtest for task {task_id} w/ testing={testing} ...")
+#     backtester = BE(start_date=params.get("start_date"),
+#                     end_date=params.get("end_date"),
+#                     strategy=params.get("strategy", "Percentage Under"),
+#                     strategy_unit=params.get("strategy_unit", 0.15),
+#                     portfolio_value=initial_portfolio_value,
+#                     spread=params.get("spread", 50))
+    
+#     completed_data, benchmark_data, unrealized_results = backtester.run()
 
 def generate_daily_stats(unrealized_results, initial_portfolio_value):
     """
