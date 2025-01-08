@@ -325,7 +325,7 @@ def generate_aggregate_results(daily_trade_results, initial_portfolio_value):
     Returns:
         DataFrame: DataFrame containing daily returns, portfolio value, and daily return percentage.
     """
-    daily_agg_results = daily_trade_results.groupby('current_date')['daily_trade_pnl'].sum().reset_index()
+    daily_agg_results = daily_trade_results.groupby('current_date')['pnl_delta'].sum().reset_index()
     daily_agg_results.columns = ['current_date', 'daily_return']
     daily_agg_results['portfolio_value'] = initial_portfolio_value + daily_agg_results['daily_return'].cumsum()
     daily_agg_results['daily_return_percent'] = daily_agg_results['portfolio_value'].pct_change() * 100
