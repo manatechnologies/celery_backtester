@@ -4,11 +4,11 @@ import logging
 import numpy as np
 from flask_cors import CORS
 from flask import Flask, request, jsonify
-from tasks import run_backtest
+from tasks import run_backtest, run_backtest_v2
 from functools import wraps
 from sqlalchemy import desc
 from database.db import Session
-from database.models import Backtest, Statistic, BenchmarkStatistic
+from database.models import Backtest, Statistic, BenchmarkStatistic, SpyStatistic, AcwiStatistic
 from utils import get_first_and_last_day
 from google.cloud import bigquery
 from thales.options_analyzer.monte_carlo.engine import MonteCarloEngine
@@ -43,7 +43,7 @@ def start_backtest():
         backtest_id = uuid.uuid4()
         params['backtest_id'] = backtest_id
         # Start the backtest task
-        task = run_backtest.delay(params)
+        task = run_backtest_v2.delay(params)
         task_id = task.id
         # Save the initial backtesting info to Postgres
         pre_backtest_updates(task_id, params)
@@ -70,6 +70,35 @@ def get_backtests():
                 'statistic': statistic.to_dict() if statistic else None,
                 'benchmark_statistic': benchmark_statistic.to_dict() if benchmark_statistic else None
             } for backtest, statistic, benchmark_statistic in results
+        ]
+        return jsonify(backtests_statistics)
+    
+    except Exception as e:
+        logging.error(f'Failed to fetch backtests: {e}')
+        return jsonify(error=str(e)), 400
+    finally:
+        session.close()
+
+@app.route('/backtests', methods=['GET'])
+@require_api_key
+def get_backtests():
+    session = Session()
+    try:
+        # Perform a join between backtests and statistics tables and order by the submission date in descending order
+        results = session.query(Backtest, Statistic, SpyStatistic, AcwiStatistic)\
+            .outerjoin(Statistic, Backtest.id == Statistic.backtest_id)\
+            .outerjoin(SpyStatistic, Backtest.id == SpyStatistic.backtest_id)\
+            .outerjoin(AcwiStatistic, Backtest.id == AcwiStatistic.backtest_id)\
+            .order_by(desc(Backtest.submitted_at)).all()
+        
+        # Convert the query results to dictionaries and return as JSON
+        backtests_statistics = [
+            {
+                'backtest': backtest.to_dict(),
+                'statistic': statistic.to_dict() if statistic else None,
+                'spy_statistic': spy_statistic.to_dict() if spy_statistic else None,
+                'acwi_statistic': acwi_statistic.to_dict() if acwi_statistic else None
+            } for backtest, statistic, spy_statistic, acwi_statistic in results
         ]
         return jsonify(backtests_statistics)
     
