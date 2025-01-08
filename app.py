@@ -58,33 +58,6 @@ def get_backtests():
     session = Session()
     try:
         # Perform a join between backtests and statistics tables and order by the submission date in descending order
-        results = session.query(Backtest, Statistic, BenchmarkStatistic)\
-            .outerjoin(Statistic, Backtest.id == Statistic.backtest_id)\
-            .outerjoin(BenchmarkStatistic, Backtest.id == BenchmarkStatistic.backtest_id)\
-            .order_by(desc(Backtest.submitted_at)).all()
-        
-        # Convert the query results to dictionaries and return as JSON
-        backtests_statistics = [
-            {
-                'backtest': backtest.to_dict(),
-                'statistic': statistic.to_dict() if statistic else None,
-                'benchmark_statistic': benchmark_statistic.to_dict() if benchmark_statistic else None
-            } for backtest, statistic, benchmark_statistic in results
-        ]
-        return jsonify(backtests_statistics)
-    
-    except Exception as e:
-        logging.error(f'Failed to fetch backtests: {e}')
-        return jsonify(error=str(e)), 400
-    finally:
-        session.close()
-
-@app.route('/backtests', methods=['GET'])
-@require_api_key
-def get_backtests():
-    session = Session()
-    try:
-        # Perform a join between backtests and statistics tables and order by the submission date in descending order
         results = session.query(Backtest, Statistic, SpyStatistic, AcwiStatistic)\
             .outerjoin(Statistic, Backtest.id == Statistic.backtest_id)\
             .outerjoin(SpyStatistic, Backtest.id == SpyStatistic.backtest_id)\
@@ -120,20 +93,22 @@ def get_backtest():
         logging.info(f"GET /backtest for {backtest_id}")
 
         # Perform a join between backtests and statistics tables and order by the submission date in descending order
-        result = session.query(Backtest, Statistic, BenchmarkStatistic)\
+        result = session.query(Backtest, Statistic, SpyStatistic, AcwiStatistic)\
             .outerjoin(Statistic, Backtest.id == Statistic.backtest_id)\
-            .outerjoin(BenchmarkStatistic, Backtest.id == BenchmarkStatistic.backtest_id)\
+            .outerjoin(SpyStatistic, Backtest.id == SpyStatistic.backtest_id)\
+            .outerjoin(AcwiStatistic, Backtest.id == AcwiStatistic.backtest_id)\
             .filter(Backtest.id == backtest_id)\
             .first()
         
         if not result:
             return jsonify({"error": "Backtest not found"}), 404
 
-        backtest, statistic, benchmark_statistic = result
+        backtest, statistic, spy_statistic, acwi_statistic = result
         response = {
             'backtest': backtest.to_dict(),
             'statistic': statistic.to_dict() if statistic else None,
-            'benchmark_statistic': benchmark_statistic.to_dict() if benchmark_statistic else None
+            'spy_statistic': spy_statistic.to_dict() if spy_statistic else None,
+            'acwi_statistic': acwi_statistic.to_dict() if acwi_statistic else None
         }
         
         return jsonify(response)
