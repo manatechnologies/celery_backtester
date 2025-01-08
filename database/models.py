@@ -53,7 +53,6 @@ class BenchmarkStatistic(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     backtest_id = Column(UUID(as_uuid=True), ForeignKey('backtests.id'), nullable=False)
-    ticker = Column(String)
     bm_total_return_percentage = Column(Float)
     bm_total_return = Column(Float)
     bm_max_drawdown_percent = Column(Float)
@@ -72,7 +71,6 @@ class SpyStatistic(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     backtest_id = Column(UUID(as_uuid=True), ForeignKey('backtests.id'), nullable=False)
-    ticker = Column(String)
     total_return_percentage = Column(Float)
     total_return = Column(Float)
     max_drawdown_percent = Column(Float)
@@ -91,7 +89,6 @@ class AcwiStatistic(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     backtest_id = Column(UUID(as_uuid=True), ForeignKey('backtests.id'), nullable=False)
-    ticker = Column(String)
     total_return_percentage = Column(Float)
     total_return = Column(Float)
     max_drawdown_percent = Column(Float)
