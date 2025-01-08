@@ -4,7 +4,7 @@ import logging
 import numpy as np
 from flask_cors import CORS
 from flask import Flask, request, jsonify
-from tasks import run_backtest, run_backtest_v2
+from tasks import run_backtest_v2
 from functools import wraps
 from sqlalchemy import desc
 from database.db import Session
