@@ -160,7 +160,6 @@ def run_backtest_v2(self, params):
                     strategy=params.get("strategy", "Percentage Under"),
                     strategy_unit=params.get("strategy_unit", 0.15),
                     portfolio_value=initial_portfolio_value,
-                    spread=params.get("spread", 50),
                     benchmarks=benchmarks)
     
     trade_results, daily_trade_results, benchmark_results = backtester.run()
